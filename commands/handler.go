@@ -21,12 +21,20 @@ func (h *CommandHandler) ExecuteCommands(session *discordgo.Session, interaction
 		return
 	}
 	name := interaction.ApplicationCommandData().Name
+
 	for _, cmd := range h.commands {
 		if cmd.Name == name {
 			if cmd.Handler == nil {
 				return
 			}
-			cmd.Handler(session, interaction)
+			options := cmd.HandlerOptions
+			fmt.Println("Executing command:", options)
+			if options != nil {
+				ParseOptions(interaction.ApplicationCommandData(), session, &options, *cmd)
+			}
+
+			cmd.Handler(session, interaction, options)
+
 		}
 	}
 }

@@ -27,7 +27,7 @@ func main() {
 	pingCommand := commands.Builder().
 		SetName("ping").
 		SetDescription("Ping the bot").
-		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, options any) {
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -42,7 +42,7 @@ func main() {
 		SetName("ban").
 		SetDescription("Ban a member from the server").
 		SetOptions(BanCommand{}).
-		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, options any) {
 			data := interaction.ApplicationCommandData()
 			member := data.GetOption("member").UserValue(session)
 			if member == nil {
@@ -64,7 +64,7 @@ func main() {
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content:     fmt.Sprintf("Banned %s for reason, Attachment: %s", member.Username, attachmentUrl),
+					Content: fmt.Sprintf("Banned %s for reason, Attachment: %s", member.Username, attachmentUrl),
 				},
 			}
 			if err := session.InteractionRespond(interaction.Interaction, response); err != nil {

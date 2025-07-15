@@ -69,10 +69,11 @@ func inferOptionType(t reflect.Type) (*InferResult, error) {
 }
 
 type CommandBuilder struct {
-	Name        string
-	Description string
-	Options     []*discordgo.ApplicationCommandOption
-	Handler     func(session *discordgo.Session, interaction *discordgo.InteractionCreate)
+	Name           string
+	Description    string
+	Options        []*discordgo.ApplicationCommandOption
+	Handler        func(session *discordgo.Session, interaction *discordgo.InteractionCreate, options any)
+	HandlerOptions any
 }
 
 func Builder() *CommandBuilder {
@@ -94,6 +95,7 @@ func (b *CommandBuilder) SetOptions(options any) *CommandBuilder {
 		b.Options = nil
 		return b
 	}
+	b.HandlerOptions = options
 	opts := InferOptions(options)
 	b.Options = opts
 	return b
@@ -107,7 +109,7 @@ func (b *CommandBuilder) Build() *discordgo.ApplicationCommand {
 	}
 }
 
-func (b *CommandBuilder) SetHandler(handler func(session *discordgo.Session, interaction *discordgo.InteractionCreate)) *CommandBuilder {
+func (b *CommandBuilder) SetHandler(handler func(session *discordgo.Session, interaction *discordgo.InteractionCreate, options any)) *CommandBuilder {
 	if handler == nil {
 		panic("Command handler cannot be nil")
 	}
