@@ -56,7 +56,7 @@ type CommandBuilder struct {
 	Handler     func(session *discordgo.Session, interaction *discordgo.InteractionCreate)
 }
 
-func NewCommandBuilder() *CommandBuilder {
+func Builder() *CommandBuilder {
 	return &CommandBuilder{}
 }
 

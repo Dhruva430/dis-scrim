@@ -18,7 +18,7 @@ type BanCommand struct {
 
 func main() {
 	commandHandler := commands.NewCommandHandler()
-	pingCommand := commands.NewCommandBuilder().
+	pingCommand := commands.Builder().
 		SetName("ping").
 		SetDescription("Ping the bot").
 		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
@@ -32,7 +32,7 @@ func main() {
 				log.Printf("Failed to respond to interaction: %v", err)
 			}
 		})
-	banCommand := commands.NewCommandBuilder().
+	banCommand := commands.Builder().
 		SetName("ban").
 		SetDescription("Ban a member from the server").
 		SetOptions(BanCommand{}).
