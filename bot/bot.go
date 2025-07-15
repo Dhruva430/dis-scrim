@@ -1,10 +1,10 @@
 package bot
 
 import (
+	"dis-scrim/bot/commands"
+	"dis-scrim/bot/handlers"
 	"log"
 
-	"github.com/Dhruva430/dis-scrim.git/bot/commands"
-	"github.com/Dhruva430/dis-scrim.git/bot/handlers"
 	"github.com/bwmarrin/discordgo"
 )
 

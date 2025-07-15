@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"github.com/Dhruva430/dis-scrim.git/bot/commands"
+	"dis-scrim/bot/commands"
+
 	"github.com/bwmarrin/discordgo"
 )
 
