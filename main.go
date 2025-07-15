@@ -62,6 +62,11 @@ func main() {
 				log.Printf("Failed to cast optionsData to BanCommand: %v", optionsData)
 				return
 			}
+			// Contruct the response message
+			if options.Reason == nil {
+				reason := "No reason provided"
+				options.Reason = &reason
+			}
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -73,31 +78,9 @@ func main() {
 				return
 			}
 		})
-	suggestionCommand := commands.Builder().
-		SetName("suggestion").
-		SetDescription("Send a suggestion to the server admins").
-		SetOptions(SuggestionCommand{}).SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, optionsData any) {
-		options, ok := optionsData.(SuggestionCommand)
-		if !ok {
-			log.Printf("Failed to cast optionsData to SuggestionCommand: %v", optionsData)
-			return
-		}
-
-		response := &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("Suggestion received: %s", options.Title),
-			},
-		}
-		if err := session.InteractionRespond(interaction.Interaction, response); err != nil {
-			log.Printf("Failed to respond to interaction: %v", err)
-			return
-		}
-	})
 
 	commandHandler.AddCommand(pingCommand)
 	commandHandler.AddCommand(banCommand)
-	commandHandler.AddCommand(suggestionCommand)
 	session, err := CreateBotSession()
 	if err != nil {
 		log.Fatalf("Failed to create bot session: %v", err)

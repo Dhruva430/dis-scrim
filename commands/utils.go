@@ -89,79 +89,51 @@ func ParseOptions(data discordgo.ApplicationCommandInteractionData, session *dis
 			fmt.Printf("Option %s not found in interaction data\n", option.Name)
 			continue
 		}
+		field := reflectValue.FieldByName(attributeMap[option.Name])
 		switch option.Type {
 		case discordgo.ApplicationCommandOptionUser:
 			userValue := getOption.UserValue(session)
-			fmt.Printf("User value for %s: %v\n", option.Name, userValue)
-			if userValue != nil {
-				fieldName := attributeMap[option.Name]
-				fmt.Printf("Setting field %s to user %s\n", fieldName, userValue.Username)
-				reflectField := reflectValue.FieldByName(fieldName)
-				if reflectField.IsValid() && reflectField.CanSet() {
-					if reflectField.Kind() == reflect.String {
-						reflectField.SetString(userValue.Username)
-					} else if reflectField.Kind() == reflect.Struct && reflectField.Type().Name() == "User" {
-						reflectField.Set(reflect.ValueOf(*userValue))
-					} else {
-						fmt.Printf("Field %s is not a string or User struct, cannot set value\n", fieldName)
-					}
-				} else {
-					fmt.Printf("Field %s is not valid or cannot be set\n", fieldName)
-				}
-			}
+			setFieldValue(field, *userValue, option.Required)
+
 		case discordgo.ApplicationCommandOptionString:
 			stringValue := getOption.StringValue()
-			fmt.Printf("String value for %s: %s\n", option.Name, stringValue)
-			if stringValue != "" {
-				fieldName := attributeMap[option.Name]
-				fmt.Printf("Setting field %s to value %s\n", fieldName, stringValue)
-				reflectField := reflectValue.FieldByName(fieldName)
-				if reflectField.IsValid() && reflectField.CanSet() {
-					if !option.Required {
-						reflectField.Set(reflect.ValueOf(&stringValue))
-					} else {
-						reflectField.SetString(stringValue)
-					}
-				} else {
-					fmt.Printf("Field %s is not valid or cannot be set\n", fieldName)
-				}
-			}
+			setFieldValue(field, stringValue, option.Required)
 		}
 	}
 
 	fmt.Printf("Options after parsing: %v\n", options)
 }
 
-func SetField(options any, fieldName string, userValue any) error {
-	v := reflect.ValueOf(options)
-
-	if v.Kind() != reflect.Ptr || v.IsNil() {
-		return fmt.Errorf("options must be a non-nil pointer to a struct")
+func setFieldValue(field reflect.Value, value any, required bool) {
+	if !field.IsValid() || !field.CanSet() {
+		return
 	}
 
-	v = v.Elem()
+	val := reflect.ValueOf(value)
 
-	if v.Kind() != reflect.Struct {
-		return fmt.Errorf("options must point to a struct")
+	// Handle pointer vs non-pointer destination
+	switch field.Kind() {
+	case reflect.Ptr:
+		// If field is a pointer and not nil, ensure correct type
+		if val.Type().AssignableTo(field.Type()) {
+			field.Set(val)
+		} else if val.Type().AssignableTo(field.Type().Elem()) {
+			ptr := reflect.New(field.Type().Elem())
+			ptr.Elem().Set(val)
+			field.Set(ptr)
+		}
+	case reflect.Struct, reflect.String, reflect.Int, reflect.Bool, reflect.Float64:
+		if required {
+			if val.Type().AssignableTo(field.Type()) {
+				field.Set(val)
+			}
+		} else {
+			// optional struct/string: store pointer to value
+			if field.Type().Kind() == reflect.Ptr && val.Type().AssignableTo(field.Type().Elem()) {
+				ptr := reflect.New(field.Type().Elem())
+				ptr.Elem().Set(val)
+				field.Set(ptr)
+			}
+		}
 	}
-
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return fmt.Errorf("no such field: %s", fieldName)
-	}
-	if !field.CanSet() {
-		return fmt.Errorf("cannot set field: %s", fieldName)
-	}
-
-	val := reflect.ValueOf(userValue)
-
-	if val.Type().AssignableTo(field.Type()) {
-		field.Set(val)
-	} else if val.Type().ConvertibleTo(field.Type()) {
-		field.Set(val.Convert(field.Type()))
-	} else {
-		return fmt.Errorf("cannot assign %v to field %s (expected %v)", val.Type(), fieldName, field.Type())
-	}
-
-	return nil
 }
