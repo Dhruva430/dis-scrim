@@ -23,10 +23,6 @@ type BanCommand struct {
 	Attachment *discordgo.MessageAttachment `name:"attachment" desc:"Attachment to include in the ban message"`
 }
 
-type SuggestionCommand struct {
-	Title string `name:"title" desc:"Title of the suggestion"`
-}
-
 func Dereference(v any) reflect.Value {
 	val := reflect.ValueOf(v)
 
@@ -52,10 +48,13 @@ func main() {
 				log.Printf("Failed to respond to interaction: %v", err)
 			}
 		})
+	defaultReason := "No reason provided"
 	banCommand := commands.Builder().
 		SetName("ban").
 		SetDescription("Ban a member from the server").
-		SetOptions(BanCommand{}).
+		SetOptions(BanCommand{
+			Reason: &defaultReason,
+		}).
 		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, optionsData any) {
 			options, ok := optionsData.(BanCommand)
 			if !ok {
@@ -63,10 +62,10 @@ func main() {
 				return
 			}
 			// Contruct the response message
-			if options.Reason == nil {
-				reason := "No reason provided"
-				options.Reason = &reason
-			}
+			// if options.Reason == nil {
+			// 	reason := "No reason provided"
+			// 	options.Reason = &reason
+			// }
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{

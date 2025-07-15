@@ -34,6 +34,7 @@ func (h *CommandHandler) ExecuteCommands(session *discordgo.Session, interaction
 				originalOpts := reflect.ValueOf(cmd.HandlerOptions)
 				ptrToCopy := reflect.New(originalOpts.Type())
 				fmt.Printf("Command found: %v\n", ptrToCopy.Elem().Interface())
+				ptrToCopy.Elem().Set(originalOpts)
 				ParseOptions(data, session, ptrToCopy.Interface(), cmd)
 				opts = ptrToCopy.Elem().Interface()
 			}
