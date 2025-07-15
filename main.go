@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
 	"syscall"
 
 	"dis-scrim/commands"
@@ -14,12 +15,25 @@ import (
 )
 
 type BanCommand struct {
-	Member     discordgo.Member             `name:"member" desc:"Member to ban"`
+	Member     discordgo.User               `name:"member" desc:"Member to ban"`
 	Reason     *string                      `name:"reason" desc:"Reason for the ban"`
 	Role       *discordgo.Role              `name:"role" desc:"Role to assign after ban"`
 	Channel    *discordgo.Channel           `name:"channel" desc:"Channel to notify after ban"`
 	Boolean    *bool                        `name:"boolean" desc:"A boolean option"`
 	Attachment *discordgo.MessageAttachment `name:"attachment" desc:"Attachment to include in the ban message"`
+}
+
+type SuggestionCommand struct {
+	Title string `name:"title" desc:"Title of the suggestion"`
+}
+
+func Dereference(v any) reflect.Value {
+	val := reflect.ValueOf(v)
+
+	for (val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface) && !val.IsNil() {
+		val = val.Elem()
+	}
+	return val
 }
 
 func main() {
@@ -42,29 +56,16 @@ func main() {
 		SetName("ban").
 		SetDescription("Ban a member from the server").
 		SetOptions(BanCommand{}).
-		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, options any) {
-			data := interaction.ApplicationCommandData()
-			member := data.GetOption("member").UserValue(session)
-			if member == nil {
-				log.Println("No member specified for ban.")
+		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, optionsData any) {
+			options, ok := optionsData.(BanCommand)
+			if !ok {
+				log.Printf("Failed to cast optionsData to BanCommand: %v", optionsData)
 				return
-			}
-			attachmentId := interaction.ApplicationCommandData().GetOption("attachment")
-			var attachment *discordgo.MessageAttachment = nil
-			if attachmentId != nil {
-				if attachmentId, ok := attachmentId.Value.(string); ok {
-					fmt.Println("Attachment ID:", attachmentId)
-					attachment = data.Resolved.Attachments[attachmentId]
-				}
-			}
-			attachmentUrl := ""
-			if attachment != nil {
-				attachmentUrl = attachment.URL
 			}
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Banned %s for reason, Attachment: %s", member.Username, attachmentUrl),
+					Content: fmt.Sprintf("Banned %s for reason: %v", options.Member.Username, *options.Reason),
 				},
 			}
 			if err := session.InteractionRespond(interaction.Interaction, response); err != nil {
@@ -72,9 +73,31 @@ func main() {
 				return
 			}
 		})
+	suggestionCommand := commands.Builder().
+		SetName("suggestion").
+		SetDescription("Send a suggestion to the server admins").
+		SetOptions(SuggestionCommand{}).SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate, optionsData any) {
+		options, ok := optionsData.(SuggestionCommand)
+		if !ok {
+			log.Printf("Failed to cast optionsData to SuggestionCommand: %v", optionsData)
+			return
+		}
+
+		response := &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: fmt.Sprintf("Suggestion received: %s", options.Title),
+			},
+		}
+		if err := session.InteractionRespond(interaction.Interaction, response); err != nil {
+			log.Printf("Failed to respond to interaction: %v", err)
+			return
+		}
+	})
 
 	commandHandler.AddCommand(pingCommand)
 	commandHandler.AddCommand(banCommand)
+	commandHandler.AddCommand(suggestionCommand)
 	session, err := CreateBotSession()
 	if err != nil {
 		log.Fatalf("Failed to create bot session: %v", err)

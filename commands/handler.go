@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -20,21 +21,25 @@ func (h *CommandHandler) ExecuteCommands(session *discordgo.Session, interaction
 	if interaction.Type != discordgo.InteractionApplicationCommand {
 		return
 	}
-	name := interaction.ApplicationCommandData().Name
+	data := interaction.ApplicationCommandData()
+	name := data.Name
 
 	for _, cmd := range h.commands {
 		if cmd.Name == name {
 			if cmd.Handler == nil {
 				return
 			}
-			options := cmd.HandlerOptions
-			fmt.Println("Executing command:", options)
-			if options != nil {
-				ParseOptions(interaction.ApplicationCommandData(), session, &options, *cmd)
+			var opts any = nil
+			if cmd.HandlerOptions != nil {
+				originalOpts := reflect.ValueOf(cmd.HandlerOptions)
+				ptrToCopy := reflect.New(originalOpts.Type())
+				fmt.Printf("Command found: %v\n", ptrToCopy.Elem().Interface())
+				ParseOptions(data, session, ptrToCopy.Interface(), cmd)
+				opts = ptrToCopy.Elem().Interface()
 			}
+			fmt.Printf("Command found: %v\n", opts)
 
-			cmd.Handler(session, interaction, options)
-
+			cmd.Handler(session, interaction, opts)
 		}
 	}
 }

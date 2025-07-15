@@ -40,7 +40,7 @@ func inferOptionType(t reflect.Type) (*InferResult, error) {
 			optional:   optional,
 		}, nil
 	}
-	if t == reflect.TypeOf(discordgo.Member{}) {
+	if t == reflect.TypeOf(discordgo.User{}) {
 		return &InferResult{
 			optionType: discordgo.ApplicationCommandOptionUser,
 			optional:   optional,
