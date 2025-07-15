@@ -57,14 +57,9 @@ func main() {
 
 	commandHandler.AddCommand(pingCommand)
 	commandHandler.AddCommand(banCommand)
-	session, err := discordgo.New("Bot " + configs.GetToken())
+	session, err := CreateBotSession()
 	if err != nil {
-		fmt.Println("error creating Discord session,", err)
-		return
-	}
-	err = session.Open()
-	if err != nil {
-		log.Fatalf("Failed to open session: %v", err)
+		log.Fatalf("Failed to create bot session: %v", err)
 	}
 	defer session.Close()
 	app, err := session.Application("@me")
@@ -80,4 +75,15 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-stop
 	log.Println("Shutting down bot...")
+}
+
+func CreateBotSession() (*discordgo.Session, error) {
+	session, err := discordgo.New("Bot " + configs.GetToken())
+	if err != nil {
+		return nil, fmt.Errorf("error creating Discord session: %w", err)
+	}
+	if err := session.Open(); err != nil {
+		return nil, fmt.Errorf("error opening Discord session: %w", err)
+	}
+	return session, nil
 }
