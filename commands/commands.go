@@ -2,8 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"reflect"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type InferResult struct {
@@ -42,7 +43,25 @@ func inferOptionType(t reflect.Type) (*InferResult, error) {
 	if t == reflect.TypeOf(discordgo.Member{}) {
 		return &InferResult{
 			optionType: discordgo.ApplicationCommandOptionUser,
-			optional:   false,
+			optional:   optional,
+		}, nil
+	}
+	if t == reflect.TypeOf(discordgo.Channel{}) {
+		return &InferResult{
+			optionType: discordgo.ApplicationCommandOptionChannel,
+			optional:   optional,
+		}, nil
+	}
+	if t == reflect.TypeOf(discordgo.Role{}) {
+		return &InferResult{
+			optionType: discordgo.ApplicationCommandOptionRole,
+			optional:   optional,
+		}, nil
+	}
+	if t == reflect.TypeOf(discordgo.MessageAttachment{}) {
+		return &InferResult{
+			optionType: discordgo.ApplicationCommandOptionAttachment,
+			optional:   optional,
 		}, nil
 	}
 
@@ -92,6 +111,7 @@ func (b *CommandBuilder) SetHandler(handler func(session *discordgo.Session, int
 	if handler == nil {
 		panic("Command handler cannot be nil")
 	}
+
 	b.Handler = handler
 	return b
 }

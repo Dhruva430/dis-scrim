@@ -1,19 +1,25 @@
 package main
 
 import (
-	"dis-scrim/commands"
-	"dis-scrim/configs"
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"dis-scrim/commands"
+	"dis-scrim/configs"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type BanCommand struct {
-	Member discordgo.Member `name:"member" desc:"Member to ban"`
-	Reason *string          `name:"reason" desc:"Reason for the ban"`
+	Member     discordgo.Member             `name:"member" desc:"Member to ban"`
+	Reason     *string                      `name:"reason" desc:"Reason for the ban"`
+	Role       *discordgo.Role              `name:"role" desc:"Role to assign after ban"`
+	Channel    *discordgo.Channel           `name:"channel" desc:"Channel to notify after ban"`
+	Boolean    *bool                        `name:"boolean" desc:"A boolean option"`
+	Attachment *discordgo.MessageAttachment `name:"attachment" desc:"Attachment to include in the ban message"`
 }
 
 func main() {
@@ -37,16 +43,28 @@ func main() {
 		SetDescription("Ban a member from the server").
 		SetOptions(BanCommand{}).
 		SetHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-			member := interaction.ApplicationCommandData().Options[0].UserValue(session)
-			reason := interaction.ApplicationCommandData().Options[1].StringValue()
+			data := interaction.ApplicationCommandData()
+			member := data.GetOption("member").UserValue(session)
 			if member == nil {
 				log.Println("No member specified for ban.")
 				return
 			}
+			attachmentId := interaction.ApplicationCommandData().GetOption("attachment")
+			var attachment *discordgo.MessageAttachment = nil
+			if attachmentId != nil {
+				if attachmentId, ok := attachmentId.Value.(string); ok {
+					fmt.Println("Attachment ID:", attachmentId)
+					attachment = data.Resolved.Attachments[attachmentId]
+				}
+			}
+			attachmentUrl := ""
+			if attachment != nil {
+				attachmentUrl = attachment.URL
+			}
 			response := &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
-					Content: fmt.Sprintf("Banned %s for reason: %s", member.Username, reason),
+					Content:     fmt.Sprintf("Banned %s for reason, Attachment: %s", member.Username, attachmentUrl),
 				},
 			}
 			if err := session.InteractionRespond(interaction.Interaction, response); err != nil {
